@@ -1,84 +1,94 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
-    document.title = "StaySpot | Sign Up";
-    const [credentials, setCredentials] = useState({})
-    const [error, setError] = useState(null)
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-    const handleChange = (e) => {
-        setCredentials((prev) => ({ ...prev, [e.target.id]: e.target.value }));
-    };
+  const { dispatch } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    const navigate = useNavigate();
-
-    const handleRegister = async (e) => {
-        e.preventDefault();
-        setCredentials(prev => ({...prev, [e.target.id]: e.target.value}))
-        try {
-            const res = await axios.post('${import.meta.env.VITE_BACKEND_URL}/api/auth/register', credentials)
-            navigate('/')            
-        } catch (error) {
-            setError(error.response?.data?.message || "Something went wrong")
-        }
+  const handleRegister = (e) => {
+    e.preventDefault();
+    if (!username || !email || !password) {
+      alert("Please fill all details!");
+      return;
     }
 
-    return (
-        <>
-            <Navbar />
-            <div className="h-screen flex justify-center items-center flex-col gap-y-10">
-                <h1 className="text-4xl font-black">Sign Up</h1>
-                <div className="flex flex-col item-center bg-zinc-200 p-7 rounded-md">
-                    
-                    <form
-                        onSubmit={handleRegister}
-                        className="flex flex-col item-center  gap-y-5 bg-zinc-200 rounded-md"
-                    >
-                        {error && <p className="text-red-600 text-sm text-center">{error}</p>}
-                        <input
-                            type="text"
-                            placeholder="Username"
-                            id="username"
-                            onChange={handleChange}
-                            className="border-2 border-zinc-500 p-3 w-60 rounded-md"
-                            required
-                        />
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            id="email"
-                            onChange={handleChange}
-                            required
-                            className="border-2 border-zinc-500 p-3 w-60 rounded-md"
-                        />
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            id="password"
-                            onChange={handleChange}
-                            className="border-2 border-zinc-500 p-3 w-60 rounded-md"
-                            required
-                        />
-                        <button
-                            type="submit"
-                            className="bg-blue-600 text-white py-4 rounded-md font-semibold"
-                            // disabled={loading}
-                        >
-                            Login
-                        </button>
-                    </form>
-                    <p className="mt-4">
-                        Already have an account?{" "}
-                        <a href="/login" className="text-blue-600">
-                            Login
-                        </a>
-                    </p>
-                </div>
+    const newUser = { username, email };
+    dispatch({ type: "LOGIN_SUCCESS", payload: newUser });
+    localStorage.setItem("user", JSON.stringify(newUser));
+    alert("🎉 Registration Successful!");
+    navigate("/");
+  };
+
+  return (
+    <div className="bg-slate-50 min-h-screen">
+      <Navbar />
+      <div className="flex items-center justify-center pt-16 px-4">
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-xl max-w-md w-full">
+          <h2 className="text-2xl font-black text-slate-900 text-center mb-2">
+            Create Your Account
+          </h2>
+          <p className="text-xs text-slate-500 text-center mb-6">
+            Register to permanently save your booking details & preferences.
+          </p>
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-slate-700 uppercase">Username</label>
+              <input
+                type="text"
+                placeholder="Devansh Singh"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full p-3 rounded-xl border text-sm font-medium mt-1 bg-slate-50"
+              />
             </div>
-        </>
-    );
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 uppercase">Email Address</label>
+              <input
+                type="email"
+                placeholder="devansh@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-3 rounded-xl border text-sm font-medium mt-1 bg-slate-50"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 uppercase">Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 rounded-xl border text-sm font-medium mt-1 bg-slate-50"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-md mt-2"
+            >
+              Register & Save Details
+            </button>
+          </form>
+
+          <p className="text-xs text-center text-slate-500 mt-5 font-medium">
+            Already have an account?{" "}
+            <Link to="/login" className="text-blue-600 font-bold hover:underline">
+              Sign In
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Signup;

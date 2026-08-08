@@ -16,22 +16,24 @@ const Login = () => {
     };
 
     const handleLogin = async (e) => {
-        e.preventDefault();
-        dispatch({ type: "LOGIN_START" });
-        try {
-            const res = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
-                credentials, {withCredentials: true}
-            );
-            dispatch({ type: "LOGIN_SUCCESS", payload: res.data });
-            navigate('/')
-        } catch (error) {
-            dispatch({
-                type: "LOGIN_FAILURE",
-                payload: error.response?.data || "Login failed",
-            });
-        }
-    };
+  e.preventDefault();
+  dispatch({ type: "LOGIN_START" });
+  try {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+    const res = await axios.post(
+      `${backendUrl}/api/auth/login`,
+      credentials,
+      { withCredentials: true }
+    );
+    dispatch({ type: "LOGIN_SUCCESS", payload: res.data });
+    navigate("/");
+  } catch (error) {
+    dispatch({
+      type: "LOGIN_FAILURE",
+      payload: error.response?.data || "Login failed",
+    });
+  }
+};
     return (
         <>
             <Navbar />

@@ -47,6 +47,19 @@ const Reserve = ({ hotelid, setOpenReserve, totalAmount }) => {
         return !isFound;
     };
 
+    const handlePayment = async () => {
+  try {
+    const res = await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/payment/create-payment-intent`,
+      { amount: totalAmount },
+      { withCredentials: true }
+    );
+    const clientSecret = res.data.clientSecret;
+  } catch (err) {
+    console.log(err);
+  }
+};
+
     const handleClick = async () => {
         if (!user) {
             setBooked(false);

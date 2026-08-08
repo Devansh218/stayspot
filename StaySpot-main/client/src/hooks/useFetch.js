@@ -1,40 +1,39 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+
 const useFetch = (url) => {
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
+  useEffect(() => {
     const fetchData = async () => {
-        setLoading(true)
-        setError(false)
-        try {
-            const res = await axios.get(url, {
-                withCredentials: true
-            });
-            setData(res.data);
-        } catch (err) {
-            setError(err)
-        }
-        setLoading(false)
+      setLoading(true);
+      try {
+        const res = await axios.get(url);
+        setData(res.data);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false); // Guarantees loading state clears even if request yields [] or error
+      }
+    };
+    fetchData();
+  }, [url]);
+
+  const reFetch = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(url);
+      setData(res.data);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    useEffect(()=>{
-        fetchData()
-    }, [url])
-
-    const reFetch = async (url) => {
-        setLoading(true)
-        setError(false)
-        try {
-            const data = await axios.get(url, {withCredentials: true});
-            setData(data);
-        } catch (err) {
-            setError(err)
-        }
-    } 
-    
-    return { data, loading, error, reFetch }
-}
+  return { data, loading, error, reFetch };
+};
 
 export default useFetch;

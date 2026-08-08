@@ -1,148 +1,221 @@
-import { Link, useLocation } from "react-router-dom";
-import Navbar from "../components/Navbar";
 import { useState } from "react";
-import { format } from "date-fns";
-import useFetch from "../hooks/useFetch";
+import { useNavigate } from "react-router-dom";
+
+// 30+ Cities Grouped State-Wise
+const STATE_CITY_MAP = {
+  "Uttar Pradesh": ["Kanpur", "Lucknow", "Varanasi", "Agra", "Noida", "Prayagraj", "Ayodhya"],
+  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane", "Aurangabad"],
+  "Delhi NCR": ["Delhi", "Gurugram", "Ghaziabad", "Faridabad"],
+  "Karnataka": ["Bengaluru", "Mysore", "Mangalore", "Hubli"],
+  "Rajasthan": ["Jaipur", "Udaipur", "Jodhpur", "Jaisalmer"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai"],
+  "West Bengal": ["Kolkata", "Siliguri", "Darjeeling"],
+};
+
+// Function to generate dynamic features based on price tier
+const getPriceFeatures = (price) => {
+  if (price >= 3000) {
+    return {
+      tier: "Luxury Experience",
+      amenities: ["🏊 Swimming Pool", "🍸 Rooftop Lounge", "🍳 Complimentary Buffet", "🚘 Valet Parking", "🏋️ Fitness Center"],
+      badge: "Luxury"
+    };
+  } else if (price >= 1800) {
+    return {
+      tier: "Premium Stay",
+      amenities: ["📶 High-Speed Wi-Fi", "🍳 Free Breakfast", "❄️ Central AC", "☕ Coffee Maker"],
+      badge: "Premium"
+    };
+  } else {
+    return {
+      tier: "Standard Comfortable",
+      amenities: ["📶 Free Wi-Fi", "❄️ Air Conditioning", "🧹 Daily Housekeeping"],
+      badge: "Budget Friendly"
+    };
+  }
+};
+
+// Base Dataset across 30+ Cities
+const GENERATED_HOTELS = Object.entries(STATE_CITY_MAP).flatMap(([state, cities]) =>
+  cities.flatMap((city, idx) => [
+    {
+      id: `${city.toLowerCase()}-1`,
+      name: `${city} Grand Palace & Resort`,
+      city: city.toLowerCase(),
+      state: state,
+      cheapestPrice: 1200 + (idx % 3) * 1100,
+      desc: `Experience luxury and high-class comfort in central ${city}. Ideal for corporate stays and family vacations.`,
+      photos: ["https://images.unsplash.com/photo-1566073771259-6a8506099945"],
+    },
+    {
+      id: `${city.toLowerCase()}-2`,
+      name: `${city} Central Executive Inn`,
+      city: city.toLowerCase(),
+      state: state,
+      cheapestPrice: 900 + (idx % 2) * 800,
+      desc: `Budget-friendly stays with premium amenities located near main railway station in ${city}.`,
+      photos: ["https://images.unsplash.com/photo-1582719478250-c89cae4dc85b"],
+    }
+  ])
+);
+
+const SearchCard = ({ item }) => {
+  const navigate = useNavigate();
+  const features = getPriceFeatures(item.cheapestPrice);
+
+  return (
+    <div className="border rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center shadow-sm bg-white mb-4 gap-4 border-slate-200 hover:shadow-md transition-all">
+      <div className="flex flex-col sm:flex-row gap-4 w-full">
+        <img
+          src={item.photos[0]}
+          alt={item.name}
+          className="w-full sm:w-44 h-36 object-cover rounded-xl"
+        />
+        <div className="flex flex-col justify-between flex-1">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-full">
+                {features.badge}
+              </span>
+              <span className="text-xs text-slate-400 font-semibold">{item.state}</span>
+            </div>
+            <h2 className="text-lg font-bold text-slate-900 mt-1">{item.name}</h2>
+            <p className="text-xs text-slate-500 capitalize font-medium">📍 {item.city}</p>
+            <p className="text-xs text-slate-600 mt-1 line-clamp-1">{item.desc}</p>
+            
+            {/* Price-Based Features List */}
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {features.amenities.map((amenity, i) => (
+                <span key={i} className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                  {amenity}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-left sm:text-right flex flex-col justify-between w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
+        <div>
+          <span className="text-2xl font-black text-blue-950">₹{item.cheapestPrice}</span>
+          <span className="text-xs text-slate-400 font-normal"> /night</span>
+        </div>
+        <button
+          onClick={() => navigate(`/hotel/${item.id}`)}
+          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-5 py-2.5 rounded-xl mt-3 shadow transition-all whitespace-nowrap"
+        >
+          See Availability
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const Search = () => {
-    const location = useLocation();
-    const [destination, setDestination] = useState(location.state.destination);
-    const [dates, setdates] = useState(location.state.dates);
-    const [rooms, setRooms] = useState(location.state.rooms);
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
 
-    const [min, setMin] = useState(0)
-    const [max, setMax] = useState(9999)
-    const { data, loading, error, reFetch } = useFetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/hotel?city=${destination}&min=${min || 0}&max=${max || 99999}`
-    );
+  const filteredHotels = GENERATED_HOTELS.filter((hotel) => {
+    if (selectedState && hotel.state !== selectedState) return false;
+    if (selectedCity && hotel.city !== selectedCity.toLowerCase()) return false;
+    if (minPrice && hotel.cheapestPrice < parseInt(minPrice)) return false;
+    if (maxPrice && hotel.cheapestPrice > parseInt(maxPrice)) return false;
+    return true;
+  });
 
-    const handleClick = () => {
-      reFetch();
-    }
+  return (
+    <div className="flex justify-center mt-5 px-4 font-sans mb-10">
+      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6">
+        
+        {/* State & City Filter Sidebar */}
+        <div className="flex-1 bg-amber-400 p-5 rounded-2xl h-fit sticky top-5 shadow-md">
+          <h1 className="text-xl font-black text-slate-900 mb-4">Location Filters</h1>
 
-    return (
-        <>
-            <Navbar />
+          {/* State Dropdown */}
+          <div className="flex flex-col gap-1.5 mb-4">
+            <label className="text-xs font-black text-slate-800 uppercase tracking-wider">Select State</label>
+            <select
+              value={selectedState}
+              onChange={(e) => {
+                setSelectedState(e.target.value);
+                setSelectedCity("");
+              }}
+              className="p-2.5 bg-white rounded-xl border text-xs font-bold text-slate-800 w-full"
+            >
+              <option value="">All States (India)</option>
+              {Object.keys(STATE_CITY_MAP).map((state) => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+          </div>
 
-            <div className="flex h-[93vh] overflow-hidden mt-[7vh]">
-                {/* sidebar */}
-                <div className="w-[20%] bg-zinc-200 h-[93vh] overflow-y-hidden px-5 py-10 flex-shrink-0">
-                    <h1 className="text-3xl font-bold">Filters</h1>
-                    <div className="mt-5">
-                        <label className="block">Destination</label>
-                        <input
-                            type="text"
-                            className="outline-none w-full h-10 rounded my-2 p-2"
-                            value={destination}
-                            onChange={(e) => setDestination(e.target.value)}
-                        />
-                        <label className="block">Check in date</label>
-                        <input
-                            type="text"
-                            className="outline-none w-full h-10 rounded my-2 p-2"
-                            value={`${format(
-                                dates[0].startDate,
-                                "mm/dd/yyyy"
-                            )} to ${format(dates[0].endDate, "mm/dd/yyyy")}`}
-                            onChange={e=>setdates(e.target.value)}
-                        />
-                        <p className="text-xl font-semibold mt-3">Options</p>
-                        <div className="flex my-5 items-center justify-between">
-                            <p>Min Price per night</p>
-                            <input
-                                type="number"
-                                className="w-16 h-8 outline-none p-2"
-                                onChange={e=>setMin(e.target.value)}
-                                value={min}
-                            />
-                        </div>
-                        <div className="flex my-5 items-center justify-between">
-                            <p>Max Price per night</p>
-                            <input
-                                type="number"
-                                className="w-16 h-8 outline-none p-2"
-                                onChange={e=>setMax(e.target.value)}
-                                value={max}
-                            />
-                        </div>
-                        <div className="flex my-5 items-center justify-between">
-                            <p>Rooms</p>
-                            <input
-                                type="number"
-                                className="w-16 h-8 outline-none p-1"
-                                onChange={(e) => setRooms(e.target.value)}
-                                value={rooms}
-                            />
-                        </div>
-                        <button className="bg-blue-600 w-full text-white py-2 rounded font-semibold" onClick={handleClick}>
-                            Search
-                        </button>
-                    </div>
-                </div>
+          {/* City Dropdown */}
+          <div className="flex flex-col gap-1.5 mb-4">
+            <label className="text-xs font-black text-slate-800 uppercase tracking-wider">Select City (30+ Options)</label>
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="p-2.5 bg-white rounded-xl border text-xs font-bold text-slate-800 w-full"
+            >
+              <option value="">All Cities</option>
+              {(selectedState ? STATE_CITY_MAP[selectedState] : Object.values(STATE_CITY_MAP).flat()).map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          </div>
 
-                {/* search list */}
-
-                <div className="py-10 px-[5%] w-full overflow-y-auto overflow-x-hidden">
-                    {loading
-                        ? "loading"
-                        : data.map((item) => (
-                              <Link to={`/hotel/${item._id}`} key={item._id} className="flex h-60 border-2 border-zinc-400 w-full p-3 rounded justify-between my-5 h-fit">
-                                  <div className="flex gap-x-5">
-                                      <img
-                                          src="https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                                          alt=""
-                                          className="rounded w-72 h-full object-cover"
-                                      />
-                                      <div className="flex flex-col gap-y-2 w-[60%]">
-                                          <h1 className="text-3xl font-bold">
-                                              {item.name}
-                                          </h1>
-                                          <p className="text-md text-zinc-600">
-                                              Distance
-                                          </p>
-                                          <p className="px-2 py-1 bg-green-500 w-fit rounded text-white">
-                                              Free Airport Taxi
-                                          </p>
-                                          <p className="">{item.desc}</p>
-                                          <p className="text-green-600 font-semibold">
-                                              Free cancellation
-                                          </p>
-                                          <p className="text-green-400 text-sm">
-                                              You can cancel it later, so lock
-                                              in this great price today!
-                                          </p>
-                                      </div>
-                                  </div>
-                                  <div className="flex flex-col justify-between flex-shrink-0">
-                                      <div className="text-end w-full flex justify-end">
-                                          {item.rating && (
-                                              <p className="bg-blue-700 w-10 h-10 flex justify-center items-center text-white font-bold">
-                                                  {item.rating}
-                                              </p>
-                                          )}
-                                      </div>
-
-                                      <div>
-                                          <h2 className="text-end text-2xl">
-                                              Rs{" "}
-                                              {!rooms
-                                                  ? item.cheapestPrice
-                                                  : item.cheapestPrice * rooms}
-                                          </h2>
-                                          <small className="block text-zinc-600 mt-1">
-                                              includes taxes and fees
-                                          </small>
-                                          <button className="px-4 py-2 bg-blue-600 text-white rounded mt-2">
-                                              See availability
-                                          </button>
-                                      </div>
-                                  </div>
-                              </Link>
-                          ))}
-                </div>
+          {/* Budget Range */}
+          <div className="flex flex-col gap-2 mb-5">
+            <label className="text-xs font-black text-slate-800 uppercase tracking-wider">Budget Range (₹)</label>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="number"
+                placeholder="Min Price"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                className="p-2.5 bg-white rounded-xl border text-xs font-bold text-slate-800 w-full text-center"
+              />
+              <input
+                type="number"
+                placeholder="Max Price"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                className="p-2.5 bg-white rounded-xl border text-xs font-bold text-slate-800 w-full text-center"
+              />
             </div>
-        </>
-    );
+          </div>
+
+          <button
+            onClick={() => {
+              setSelectedState("");
+              setSelectedCity("");
+              setMinPrice("");
+              setMaxPrice("");
+            }}
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-colors shadow text-xs uppercase tracking-wider"
+          >
+            Clear Filters
+          </button>
+        </div>
+
+        {/* Results Panel */}
+        <div className="flex-[3]">
+          <div className="flex justify-between items-center mb-4 px-1">
+            <h2 className="text-lg font-black text-slate-900">
+              Matching Stays ({filteredHotels.length})
+            </h2>
+          </div>
+
+          {filteredHotels.map((hotel) => (
+            <SearchCard item={hotel} key={hotel.id} />
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
 };
 
 export default Search;
