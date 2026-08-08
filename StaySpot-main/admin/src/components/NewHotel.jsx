@@ -68,6 +68,39 @@ const NewHotel = () => {
         );
     };
 
+    const [uploadProgress, setUploadProgress] = useState(0);
+
+const handleClick = async (e) => {
+  e.preventDefault();
+  try {
+    const list = await Promise.all(
+      Object.values(files).map(async (file) => {
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", "uploads");
+
+        const uploadRes = await axios.post(
+          `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          data,
+          {
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(percentCompleted);
+            },
+          }
+        );
+
+        return uploadRes.data.secure_url;
+      })
+    );
+    
+  } catch (err) {
+    console.log(err);
+  }
+};
+
     return (
         <div>
             <h1 className="text-zinc-300 font-bold text-3xl px-5 py-3">
@@ -182,6 +215,18 @@ const NewHotel = () => {
                         </select>
                     </div>
                 </div>
+
+                {uploadProgress > 0 && (
+  <div className="w-full bg-zinc-700 rounded-full h-2.5 my-3 p-1">
+    <div 
+      className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+      style={{ width: `${uploadProgress}%` }}
+    ></div>
+    <p className="text-xs text-zinc-300 mt-1.5 font-medium">
+      {uploadProgress === 100 ? "Upload Complete!" : `Uploading: ${uploadProgress}%`}
+    </p>
+  </div>
+)}
 
                 <div className="w-[30%]">
                     <button

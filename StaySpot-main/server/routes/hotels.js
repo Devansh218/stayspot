@@ -1,22 +1,28 @@
-const express = require('express');
-const Hotel = require('../models/hotels.js')
-const {handleCreateHotel, getAllHotels, getHotel, handleUpdateHotel, handleDeleteHotel, countByCity, countByType, getHotelRooms} = require('../controllers/hotelControllers.js');
-const { verifyAdmin } = require('../utils/verifyToken.js');
-
+const express = require("express");
 const router = express.Router();
 
-router.post('/', verifyAdmin, handleCreateHotel);
+const {
+  createHotel,
+  updateHotel,
+  deleteHotel,
+  getHotel,
+  getHotels,
+  countByCity,
+  countByType,
+} = require("../controllers/hotelControllers");
 
-router.get('/', getAllHotels);
-router.get('/countbycity', countByCity);
-router.get('/countbytype', countByType);
+// Special count routes MUST be above /:id or general routes
+router.get("/countByCity", countByCity);
+router.get("/countbycity", countByCity);
 
-router.get('/find/:id', getHotel);
+router.get("/countByType", countByType);
+router.get("/countbytype", countByType);
 
-router.put('/:id', verifyAdmin, handleUpdateHotel);
+router.get("/find/:id", getHotel);
+router.get("/", getHotels);
 
-router.delete('/:id', verifyAdmin, handleDeleteHotel);
-router.get('/rooms/:id', getHotelRooms);
+router.post("/", createHotel);
+router.put("/:id", updateHotel);
+router.delete("/:id", deleteHotel);
 
-
-module.exports = router
+module.exports = router;
