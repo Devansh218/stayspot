@@ -60,7 +60,7 @@ const Table = ({ headers, data }) => {
 
     const truncateText = (text, maxLength = 100) => {
         if (!text) return '';
-        text = text.toString(); // Convert to string in case of numbers
+        text = text.toString(); 
         return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
     };
 
