@@ -1,425 +1,425 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
-// Numerical ID to City Mapping
-const ID_CITY_MAP = {
-  "1": "Delhi",
-  "2": "Kanpur",
-  "3": "Varanasi",
-  "4": "Mumbai",
-  "5": "Lucknow",
-  "6": "Agra"
+// Demo fallback catalog with realistic data
+const FALLBACK_HOTELS = {
+  "delhi-1": { name: "Grand Taj Palace", city: "Delhi", state: "Delhi NCR", basePrice: 1500, rating: 4.8, reviewsCount: 342, address: "Connaught Place, Central Delhi", description: "Experience luxury living in the heart of Delhi with modern amenities, fine dining, and serene architecture." },
+  "kanpur-1": { name: "Kanpur Residency Stay", city: "Kanpur", state: "Uttar Pradesh", basePrice: 1100, rating: 4.5, reviewsCount: 189, address: "Mall Road, Civil Lines, Kanpur", description: "A tranquil urban retreat providing premier hospitality, business lounge facilities, and quick access to major transit hubs." },
+  "varanasi-1": { name: "Ganges View Resort", city: "Varanasi", state: "Uttar Pradesh", basePrice: 1800, rating: 4.9, reviewsCount: 512, address: "Assi Ghat Road, Shivala, Varanasi", description: "Overlooking the sacred ghats, offering sunrise views, heritage rooms, traditional dining, and spiritual calm." },
+  "mumbai-1": { name: "Marine Drive View Suites", city: "Mumbai", state: "Maharashtra", basePrice: 2500, rating: 4.7, reviewsCount: 620, address: "Marine Drive, South Mumbai", description: "Sweeping Arabian Sea panoramas with luxury suites, infinity pool access, and seaside dining." },
 };
 
-// Unique Image Galleries for Different Property Types/Cities
-const HOTEL_GALLERIES = {
-  "Delhi": [
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
-  ],
-  "Kanpur": [
-    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80"
-  ],
-  "Varanasi": [
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80"
-  ],
-  "Mumbai": [
-    "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
-  ],
-  "Lucknow": [
-    "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80"
-  ],
-  "Default": [
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
-  ]
-};
-
-// Dynamic Amenity Engine mapped by room cost
-const getRoomAmenitiesByCost = (price) => {
-  if (price >= 3000) {
-    return [
-      "📶 Ultra Fast 500Mbps Wi-Fi", "🏊 Temperature-Controlled Infinity Pool",
-      "🍸 Rooftop Cocktail Lounge", "🍳 Complimentary Grand Buffet Breakfast",
-      "🚘 24/7 Valet Parking", "🏋️ Modern Gym with Personal Trainers",
-      "☕ In-Room Nespresso Coffee Maker", "❄️ Central Climate Control AC",
-      "🛎️ 24-Hour Dedicated Butler Service", "🧺 Express Laundry & Dry Cleaning"
-    ];
-  } else if (price >= 2000) {
-    return [
-      "📶 High-Speed Fiber Wi-Fi", "🍳 Hot Cooked Breakfast Included",
-      "❄️ Individual Split AC", "📺 50-inch Smart TV with OTT",
-      "☕ Electric Tea & Coffee Kettle", "🚗 Free Reserved Parking",
-      "🛎️ 24/7 Front Desk Assistance", "🧹 Daily Housekeeping & Linen Change"
-    ];
-  } else {
-    return [
-      "📶 Free High-Speed Wi-Fi", "❄️ Air Conditioning",
-      "📺 Smart TV", "🧹 Daily Room Cleaning",
-      "🚿 24/7 Hot & Cold Water Shower", "🔒 In-Room Locker"
-    ];
-  }
-};
-
-const ROOM_CATEGORIES = [
-  {
-    id: "std",
-    name: "Classic Comfort Room",
-    type: "StaySpot Express",
-    maxGuests: 2,
-    basePrice: 1200,
-    totalRooms: 10,
-    bookedRooms: 7,
-    size: "180 sq.ft",
-    bed: "1 Queen Bed",
-  },
-  {
-    id: "dlx",
-    name: "Deluxe Executive Suite",
-    type: "StaySpot Select",
-    maxGuests: 3,
-    basePrice: 2200,
-    totalRooms: 6,
-    bookedRooms: 4,
-    size: "260 sq.ft",
-    bed: "1 King Bed + Sofa",
-  },
-  {
-    id: "prm",
-    name: "Luxury Presidential Suite",
-    type: "StaySpot Signature",
-    maxGuests: 4,
-    basePrice: 3500,
-    totalRooms: 4,
-    bookedRooms: 2,
-    size: "380 sq.ft",
-    bed: "2 King Beds",
-  }
+const HOTEL_IMAGES = [
+  "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200",
+  "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200",
+  "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1200",
+  "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1200",
+  "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1200",
+  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200",
 ];
 
 const Hotel = () => {
-  const { id } = useParams();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
+  const hotelId = pathname.split("/")[2] || "kanpur-1";
 
-  const getCityFromId = (paramId) => {
-    if (!paramId) return "Varanasi";
-    if (ID_CITY_MAP[paramId]) return ID_CITY_MAP[paramId];
-    if (paramId.includes("-")) {
-      const slug = paramId.split("-")[0];
-      return slug.charAt(0).toUpperCase() + slug.slice(1);
-    }
-    return "Varanasi";
+  // Hotel Info
+  const hotel = FALLBACK_HOTELS[hotelId] || {
+    name: `${hotelId.charAt(0).toUpperCase() + hotelId.slice(1)} Premier Stay`,
+    city: "Featured City",
+    state: "India",
+    basePrice: 1600,
+    rating: 4.7,
+    reviewsCount: 230,
+    address: "Prime Location City Center",
+    description: "Modern stay offering cozy rooms, free Wi-Fi, air conditioning, and top-tier hospitality."
   };
 
-  const formattedCity = getCityFromId(id);
-  const galleryPhotos = HOTEL_GALLERIES[formattedCity] || HOTEL_GALLERIES["Default"];
-
-  const [selectedRoom, setSelectedRoom] = useState(ROOM_CATEGORIES[0]);
-  const [activePhoto, setActivePhoto] = useState(0);
+  // Booking & Calculator State
   const [nights, setNights] = useState(1);
-  const [guests, setGuests] = useState(2);
-  const [openBookModal, setOpenBookModal] = useState(false);
-  const [myBookings, setMyBookings] = useState([]);
+  const [guests, setGuests] = useState(1);
+  const [selectedRoom, setSelectedRoom] = useState("deluxe");
+  const [couponCode, setCouponCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [couponStatus, setCouponStatus] = useState("");
 
+  // Lightbox Modal State
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
+  // Booking Pass Modal State
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [confirmedBookingData, setConfirmedBookingData] = useState(null);
+
+  // Live Simulated Urgency Counter
+  const [liveViewers] = useState(Math.floor(Math.random() * 4) + 3);
+
+  // Room Tiers Setup
+  const ROOM_TIERS = {
+    standard: { title: "Standard Cozy Room", multiplier: 1.0, maxGuests: 2, perks: ["Free Wi-Fi", "Queen Bed", "AC"] },
+    deluxe: { title: "Deluxe City View Room", multiplier: 1.35, maxGuests: 3, perks: ["Free Wi-Fi", "King Bed", "Balcony", "Breakfast Included"] },
+    suite: { title: "Executive Luxury Suite", multiplier: 1.9, maxGuests: 4, perks: ["Panoramic Views", "Living Area", "Bathtub", "All Meals Included", "Free Airport Transfer"] },
+  };
+
+  // Dynamic Price Calculations
+  const roomPricePerNight = Math.round(hotel.basePrice * ROOM_TIERS[selectedRoom].multiplier);
+  const subtotal = roomPricePerNight * nights;
+  const gstTax = Math.round(subtotal * 0.12); // 12% GST
+  const serviceFee = 150;
+  const grandTotal = Math.max(0, subtotal + gstTax + serviceFee - discount);
+
+  // Coupon Engine
+  const applyCoupon = () => {
+    const code = couponCode.trim().toUpperCase();
+    if (code === "FIRST500") {
+      setDiscount(500);
+      setCouponStatus("✅ ₹500 discount applied successfully!");
+    } else if (code === "STAY20") {
+      const discountVal = Math.round(subtotal * 0.2);
+      setDiscount(discountVal);
+      setCouponStatus(`✅ 20% discount (₹${discountVal}) applied!`);
+    } else {
+      setDiscount(0);
+      setCouponStatus("❌ Invalid coupon code. Try FIRST500 or STAY20");
+    }
+  };
+
+  // Keyboard navigation for Lightbox
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("userBookings")) || [];
-    setMyBookings(saved);
-  }, []);
+    const handleKeyDown = (e) => {
+      if (!lightboxOpen) return;
+      if (e.key === "ArrowRight") setCurrentImgIndex((prev) => (prev + 1) % HOTEL_IMAGES.length);
+      if (e.key === "ArrowLeft") setCurrentImgIndex((prev) => (prev - 1 + HOTEL_IMAGES.length) % HOTEL_IMAGES.length);
+      if (e.key === "Escape") setLightboxOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxOpen]);
 
-  const totalPrice = selectedRoom.basePrice * nights;
-  const activeAmenities = getRoomAmenitiesByCost(selectedRoom.basePrice);
-
-  const handleConfirmBooking = () => {
-    const newBooking = {
+  // Handle Booking Pass Trigger
+  const handleReserve = () => {
+    const bookingDetails = {
       bookingId: `STAY-${Math.floor(100000 + Math.random() * 900000)}`,
-      hotelName: `${formattedCity} StaySpot Premium Hotel`,
-      city: formattedCity,
-      roomType: selectedRoom.name,
-      guests: guests,
-      nights: nights,
-      amount: totalPrice,
-      status: "Confirmed",
-      date: new Date().toLocaleDateString(),
+      hotelName: hotel.name,
+      city: hotel.city,
+      roomType: ROOM_TIERS[selectedRoom].title,
+      nights,
+      guests,
+      totalPaid: grandTotal,
+      bookingDate: new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
     };
 
-    const updated = [newBooking, ...myBookings];
-    setMyBookings(updated);
-    localStorage.setItem("userBookings", JSON.stringify(updated));
+    // Save to LocalStorage
+    const existing = JSON.parse(localStorage.getItem("stayspot_bookings") || "[]");
+    localStorage.setItem("stayspot_bookings", JSON.stringify([bookingDetails, ...existing]));
 
-    alert(`🎉 Booking Confirmed! Pass ID: ${newBooking.bookingId}`);
-    setOpenBookModal(false);
-  };
-
-  const handleCancelBooking = (bookingId) => {
-    if (window.confirm("Are you sure you want to cancel this booking reservation?")) {
-      const filtered = myBookings.filter((b) => b.bookingId !== bookingId);
-      setMyBookings(filtered);
-      localStorage.setItem("userBookings", JSON.stringify(filtered));
-      alert("❌ Booking Reservation Cancelled Successfully.");
-    }
+    setConfirmedBookingData(bookingDetails);
+    setBookingConfirmed(true);
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen text-slate-900 font-sans">
+    <div className="bg-slate-50 min-h-screen text-slate-800 pb-20 font-sans">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 mt-6">
         
-        <button
-          onClick={() => navigate(-1)}
-          className="text-xs font-bold text-blue-900 hover:underline mb-4 flex items-center gap-1"
-        >
-          ← Back to Stays List
-        </button>
-
-        {/* Header */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+        {/* Header Title Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="bg-blue-900 text-white text-[10px] font-black px-2.5 py-0.5 rounded uppercase tracking-wider">
-                StaySpot Verified
+            <div className="flex items-center gap-2">
+              <span className="bg-blue-100 text-blue-900 font-extrabold text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                Verified Stay
               </span>
-              <span className="text-xs text-slate-400 font-semibold">Property ID: #{id}</span>
+              <span className="text-amber-500 font-black text-sm">★ {hotel.rating}</span>
+              <span className="text-slate-400 text-xs font-semibold">({hotel.reviewsCount} reviews)</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              {formattedCity} StaySpot Premium Hotel & Suites
-            </h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">
-              📍 Central Station Road, {formattedCity} • <span className="text-blue-600 font-bold">Prime Location</span>
-            </p>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{hotel.name}</h1>
+            <p className="text-xs text-slate-500 font-medium mt-1">📍 {hotel.address}</p>
           </div>
 
-          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 p-3 rounded-xl">
-            <span className="bg-blue-900 text-white font-black text-base px-2.5 py-1 rounded-lg">
-              ★ 4.8
-            </span>
-            <div>
-              <p className="text-xs font-bold text-slate-900">Exceptional</p>
-              <p className="text-[10px] text-slate-500 font-medium">320+ Guest Reviews</p>
-            </div>
+          {/* Social Proof Indicator */}
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 self-start md:self-auto">
+            <span>🔥</span>
+            <span>{liveViewers} people are viewing this property right now</span>
           </div>
         </div>
 
-        {/* Dynamic Hotel Demo Pictures Gallery */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-8">
-          <div className="md:col-span-3 h-[360px] rounded-2xl overflow-hidden shadow-sm relative border border-slate-200">
-            <img
-              src={galleryPhotos[activePhoto]}
-              alt="Hotel Interior"
-              className="w-full h-full object-cover transition-all duration-500"
-            />
-            <span className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-lg">
-              {formattedCity} Demo Photo {activePhoto + 1} of {galleryPhotos.length}
+        {/* Gallery Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-6 rounded-2xl overflow-hidden shadow-sm">
+          <div
+            onClick={() => { setCurrentImgIndex(0); setLightboxOpen(true); }}
+            className="md:col-span-2 md:row-span-2 h-72 md:h-96 relative group cursor-pointer overflow-hidden"
+          >
+            <img src={HOTEL_IMAGES[0]} alt="Main Room" className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition duration-300" />
+            <span className="absolute bottom-3 left-3 bg-slate-900/80 text-white text-xs font-bold px-3 py-1 rounded-lg backdrop-blur-sm">
+              🔍 Click to view full gallery
             </span>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-1 gap-3 h-[360px]">
-            {galleryPhotos.map((photo, i) => (
-              <div
-                key={i}
-                onClick={() => setActivePhoto(i)}
-                className={`cursor-pointer rounded-xl overflow-hidden border-2 transition-all ${
-                  activePhoto === i ? "border-blue-600 scale-[0.98]" : "border-transparent opacity-75 hover:opacity-100"
-                }`}
-              >
-                <img src={photo} alt="Thumbnail" className="w-full h-full object-cover" />
-              </div>
-            ))}
-          </div>
+          {HOTEL_IMAGES.slice(1, 5).map((img, i) => (
+            <div
+              key={i}
+              onClick={() => { setCurrentImgIndex(i + 1); setLightboxOpen(true); }}
+              className="h-36 md:h-46 relative group cursor-pointer overflow-hidden"
+            >
+              <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Body Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           
-          <div className="lg:col-span-2 space-y-6">
+          {/* Left Column: Details & Policies */}
+          <div className="lg:col-span-2 space-y-8">
             
-            {/* Room Selection */}
+            {/* Description */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <h2 className="text-lg font-black text-slate-900 mb-1">1. Select Room Category</h2>
-              <p className="text-xs text-slate-500 mb-4 font-medium">Choose from available stay types</p>
+              <h2 className="text-lg font-black text-slate-900 mb-2">About the Property</h2>
+              <p className="text-sm text-slate-600 leading-relaxed font-normal">{hotel.description}</p>
+            </div>
 
+            {/* Room Category Selector */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <h2 className="text-lg font-black text-slate-900 mb-4">Select Room Category</h2>
               <div className="space-y-3">
-                {ROOM_CATEGORIES.map((room) => {
-                  const isSelected = selectedRoom.id === room.id;
-                  const roomLeft = room.totalRooms - room.bookedRooms;
-
-                  return (
-                    <div
-                      key={room.id}
-                      onClick={() => setSelectedRoom(room)}
-                      className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex justify-between items-center ${
-                        isSelected
-                          ? "border-blue-600 bg-blue-50/40 shadow-sm"
-                          : "border-slate-200 hover:border-slate-300 bg-white"
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-slate-900">{room.name}</span>
-                          <span className="text-[10px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-bold">
-                            {room.type}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
-                          📐 {room.size} • 🛏️ {room.bed} • 👥 Max {room.maxGuests} Guests
-                        </p>
-                        
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
-                            {roomLeft} Rooms Left
-                          </span>
-                          <span className="text-[10px] font-semibold text-slate-400">
-                            ({room.bookedRooms} Booked)
-                          </span>
-                        </div>
+                {Object.entries(ROOM_TIERS).map(([key, room]) => (
+                  <label
+                    key={key}
+                    onClick={() => setSelectedRoom(key)}
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      selectedRoom === key ? "border-blue-600 bg-blue-50/50 shadow-sm" : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <input type="radio" checked={selectedRoom === key} onChange={() => setSelectedRoom(key)} className="accent-blue-600" />
+                        <span className="font-extrabold text-sm text-slate-900">{room.title}</span>
                       </div>
-
-                      <div className="text-right">
-                        <span className="text-xl font-black text-blue-950">₹{room.basePrice}</span>
-                        <span className="text-[10px] text-slate-400 block font-medium">/night</span>
+                      <div className="flex flex-wrap gap-1.5 mt-2 pl-6">
+                        {room.perks.map((perk, idx) => (
+                          <span key={idx} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">
+                            ✓ {perk}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Price-Based Included Amenities */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <h2 className="text-lg font-black text-slate-900 mb-1">Included Room Amenities</h2>
-              <p className="text-xs text-slate-500 mb-3 font-medium">Varies according to room tier & price</p>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {activeAmenities.map((item, i) => (
-                  <div key={i} className="text-xs font-bold bg-slate-50 text-slate-800 p-2.5 rounded-xl border border-slate-200 flex items-center gap-2">
-                    <span className="text-blue-600">✓</span> {item}
-                  </div>
+                    <div className="text-right mt-3 sm:mt-0 pl-6 sm:pl-0">
+                      <span className="text-xs text-slate-400 block font-semibold">Per night</span>
+                      <span className="text-base font-black text-blue-900">₹{Math.round(hotel.basePrice * room.multiplier)}</span>
+                    </div>
+                  </label>
                 ))}
               </div>
             </div>
 
-            {/* Saved Bookings & Cancellation */}
-            {myBookings.length > 0 && (
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h2 className="text-lg font-black text-slate-900 mb-3">Your Saved Bookings</h2>
-                <div className="space-y-3">
-                  {myBookings.map((b) => (
-                    <div key={b.bookingId} className="p-3.5 bg-slate-50 border rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
-                      <div>
-                        <p className="font-extrabold text-slate-900">{b.hotelName} ({b.roomType})</p>
-                        <p className="text-slate-500 text-[11px] font-medium mt-0.5">
-                          Pass ID: <span className="font-bold text-slate-800">{b.bookingId}</span> • Guests: {b.guests}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                        <span className="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded text-[10px] border border-emerald-200">
-                          ● {b.status}
-                        </span>
-                        <button
-                          onClick={() => handleCancelBooking(b.bookingId)}
-                          className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold px-3 py-1 rounded-lg text-[11px] transition-colors"
-                        >
-                          Cancel Booking
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+            {/* House Rules & Policies Accordion */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <h2 className="text-lg font-black text-slate-900 mb-3">House Rules & Cancellation</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
+                <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span>🕒</span> <span>Check-in: <strong>12:00 PM</strong></span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span>🕚</span> <span>Check-out: <strong>11:00 AM</strong></span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-100 col-span-1 sm:col-span-2">
+                  <span>🛡️</span> <span><strong>Free Cancellation:</strong> 100% refund up to 24 hours before check-in.</span>
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Reviews Section */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <h2 className="text-lg font-black text-slate-900 mb-4">Guest Ratings & Reviews</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-6">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-xs text-slate-400 font-bold uppercase">Cleanliness</p>
+                  <p className="text-base font-black text-slate-800">4.9 / 5.0</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-xs text-slate-400 font-bold uppercase">Location</p>
+                  <p className="text-base font-black text-slate-800">4.8 / 5.0</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-xs text-slate-400 font-bold uppercase">Service</p>
+                  <p className="text-base font-black text-slate-800">4.7 / 5.0</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-xs text-slate-400 font-bold uppercase">Value</p>
+                  <p className="text-base font-black text-slate-800">4.9 / 5.0</p>
+                </div>
+              </div>
+            </div>
 
           </div>
 
-          {/* Right Summary */}
+          {/* Right Column: Sticky Price Breakdown Card */}
           <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xl sticky top-24">
-              <h3 className="text-base font-black text-slate-900 border-b pb-3 mb-4">
-                Booking Details
-              </h3>
-
-              <div className="space-y-4 mb-6 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-semibold">Selected Room:</span>
-                  <span className="font-extrabold text-slate-900">{selectedRoom.name}</span>
+            <div className="sticky top-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-xl space-y-5">
+              
+              <div className="flex justify-between items-baseline border-b border-slate-100 pb-4">
+                <div>
+                  <span className="text-2xl font-black text-slate-900">₹{roomPricePerNight}</span>
+                  <span className="text-xs text-slate-400 font-bold"> / night</span>
                 </div>
+                <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded text-xs font-black">
+                  ⚡ Best Price Guaranteed
+                </span>
+              </div>
 
-                <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border">
-                  <span className="text-slate-700 font-bold">Nights:</span>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setNights(Math.max(1, nights - 1))} className="w-6 font-bold bg-white border rounded">-</button>
-                    <span className="font-black text-slate-900">{nights}</span>
-                    <button onClick={() => setNights(nights + 1)} className="w-6 font-bold bg-white border rounded">+</button>
+              {/* Nights & Guest Controls */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Nights</label>
+                  <div className="flex items-center justify-between">
+                    <button onClick={() => setNights(Math.max(1, nights - 1))} className="font-black text-slate-600 px-2 hover:text-blue-600">-</button>
+                    <span className="font-extrabold text-sm">{nights}</span>
+                    <button onClick={() => setNights(nights + 1)} className="font-black text-slate-600 px-2 hover:text-blue-600">+</button>
                   </div>
                 </div>
-
-                <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border">
-                  <span className="text-slate-700 font-bold">Guests:</span>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setGuests(Math.max(1, guests - 1))} className="w-6 font-bold bg-white border rounded">-</button>
-                    <span className="font-black text-slate-900">{guests}</span>
-                    <button onClick={() => setGuests(Math.min(selectedRoom.maxGuests, guests + 1))} className="w-6 font-bold bg-white border rounded">+</button>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Guests</label>
+                  <div className="flex items-center justify-between">
+                    <button onClick={() => setGuests(Math.max(1, guests - 1))} className="font-black text-slate-600 px-2 hover:text-blue-600">-</button>
+                    <span className="font-extrabold text-sm">{guests}</span>
+                    <button onClick={() => setGuests(Math.min(ROOM_TIERS[selectedRoom].maxGuests, guests + 1))} className="font-black text-slate-600 px-2 hover:text-blue-600">+</button>
                   </div>
-                </div>
-
-                <div className="pt-3 border-t flex justify-between items-baseline">
-                  <span className="font-extrabold text-slate-800 text-sm">Total Payable:</span>
-                  <span className="text-2xl font-black text-blue-900">₹{totalPrice}</span>
                 </div>
               </div>
 
+              {/* Promo Code Input */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-slate-400 block">Apply Promo Coupon</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    placeholder="e.g. FIRST500 or STAY20"
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    className="flex-1 uppercase font-bold text-xs bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-blue-600"
+                  />
+                  <button onClick={applyCoupon} className="bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-xl hover:bg-black transition">
+                    Apply
+                  </button>
+                </div>
+                {couponStatus && <p className="text-[11px] font-bold mt-1 text-slate-600">{couponStatus}</p>}
+              </div>
+
+              {/* Itemized Price Breakdown */}
+              <div className="space-y-2 pt-3 border-t border-slate-100 text-xs font-medium text-slate-600">
+                <div className="flex justify-between">
+                  <span>₹{roomPricePerNight} × {nights} nights</span>
+                  <span className="font-bold text-slate-900">₹{subtotal}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Goods & Services Tax (12% GST)</span>
+                  <span className="font-bold text-slate-900">₹{gstTax}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Platform & Cleaning Fee</span>
+                  <span className="font-bold text-slate-900">₹{serviceFee}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-bold">
+                    <span>Coupon Discount</span>
+                    <span>- ₹{discount}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-baseline pt-3 border-t border-slate-200 text-sm">
+                  <span className="font-black text-slate-900">Total Payable</span>
+                  <span className="text-xl font-black text-blue-900">₹{grandTotal}</span>
+                </div>
+              </div>
+
+              {/* Reserve Button */}
               <button
-                onClick={() => setOpenBookModal(true)}
-                className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-md"
+                onClick={handleReserve}
+                className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold py-3.5 rounded-xl shadow-lg transition-all text-sm uppercase tracking-wider"
               >
-                Book Now (Pay at Hotel)
+                Instant Reserve
               </button>
+
+              <p className="text-center text-[10px] text-slate-400 font-bold">
+                🔒 Safe & Secure 256-bit Encrypted Reservation
+              </p>
+
             </div>
           </div>
 
         </div>
       </div>
 
-      {openBookModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border">
-            <div className="flex justify-between items-center mb-4 border-b pb-2">
-              <h3 className="text-base font-black text-slate-900">Confirm StaySpot Reservation</h3>
-              <button onClick={() => setOpenBookModal(false)} className="font-bold text-slate-400">✕</button>
+      {/* Lightbox Modal */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <button onClick={() => setLightboxOpen(false)} className="absolute top-4 right-4 text-white text-3xl font-bold hover:text-slate-300">
+            ✕
+          </button>
+          <button onClick={() => setCurrentImgIndex((prev) => (prev - 1 + HOTEL_IMAGES.length) % HOTEL_IMAGES.length)} className="absolute left-4 text-white text-4xl p-2 font-bold hover:text-slate-300">
+            ◀
+          </button>
+          <img src={HOTEL_IMAGES[currentImgIndex]} alt="Enlarged" className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl" />
+          <button onClick={() => setCurrentImgIndex((prev) => (prev + 1) % HOTEL_IMAGES.length)} className="absolute right-4 text-white text-4xl p-2 font-bold hover:text-slate-300">
+            ▶
+          </button>
+        </div>
+      )}
+
+      {/* Booking Pass Modal */}
+      {bookingConfirmed && confirmedBookingData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <div className="text-center">
+              <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl mb-3">
+                ✓
+              </div>
+              <h3 className="text-xl font-black text-slate-900">Booking Confirmed!</h3>
+              <p className="text-xs text-slate-400 font-bold mt-1">Pass ID: {confirmedBookingData.bookingId}</p>
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-xl border text-xs space-y-2 mb-5 font-medium">
-              <p>🏨 <strong>Hotel:</strong> {formattedCity} StaySpot Premium</p>
-              <p>🛏️ <strong>Room:</strong> {selectedRoom.name}</p>
-              <p>👥 <strong>Guests:</strong> {guests} Person(s)</p>
-              <p>📅 <strong>Duration:</strong> {nights} Night(s)</p>
-              <p>💳 <strong>Total:</strong> <span className="text-blue-900 font-black text-sm">₹{totalPrice}</span></p>
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 my-5 space-y-2.5 text-xs text-slate-700">
+              <div className="flex justify-between font-bold text-slate-900 border-b pb-2">
+                <span>{confirmedBookingData.hotelName}</span>
+                <span className="text-blue-600">{confirmedBookingData.city}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-semibold">Room Tier:</span>
+                <span className="font-bold">{confirmedBookingData.roomType}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-semibold">Duration & Guests:</span>
+                <span className="font-bold">{confirmedBookingData.nights} Night(s) • {confirmedBookingData.guests} Guest(s)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-semibold">Date of Booking:</span>
+                <span className="font-bold">{confirmedBookingData.bookingDate}</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t text-sm font-black text-slate-900">
+                <span>Total Amount Paid:</span>
+                <span className="text-emerald-600">₹{confirmedBookingData.totalPaid}</span>
+              </div>
             </div>
 
-            <button
-              onClick={handleConfirmBooking}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm shadow-md"
-            >
-              Confirm & Save Booking
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => window.print()}
+                className="flex-1 bg-slate-900 hover:bg-black text-white text-xs font-bold py-3 rounded-xl transition"
+              >
+                🖨️ Print / Save Pass
+              </button>
+              <button
+                onClick={() => setBookingConfirmed(false)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold py-3 rounded-xl transition"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };
